@@ -639,18 +639,21 @@ function tokenizer(input) {
 /**
  * For our parser we're going to take our array of tokens and turn it into an
  * AST.
- *
+ * 对于解析器来说，我们需要将我们的标记数组转为抽象语法树
  *   [{ type: 'paren', value: '(' }, ...]   =>   { type: 'Program', body: [...] }
  */
 
 // Okay, so we define a `parser` function that accepts our array of `tokens`.
+// ok,所以我们定义一个解析器接收一个tokens数组。
 function parser(tokens) {
 
   // Again we keep a `current` variable that we will use as a cursor.
+  // 同样的，设置一个current变量，用于追踪tokens当前的位置。
   let current = 0;
 
   // But this time we're going to use recursion instead of a `while` loop. So we
   // define a `walk` function.
+  // 但这时我们需要使用的是递归，而不是while循环，所以我们定义了walk函数。
   function walk() {
 
     // Inside the walk function we start by grabbing the `current` token.
@@ -658,15 +661,19 @@ function parser(tokens) {
 
     // We're going to split each type of token off into a different code path,
     // starting off with `number` tokens.
-    //
+    // 将每个类型的标记分为不同的代码路径，从number标记开始。
+
     // We test to see if we have a `number` token.
+    // 判断是否为number标记
     if (token.type === 'number') {
 
       // If we have one, we'll increment `current`.
+      // 如果是number标记，则移动current。
       current++;
 
       // And we'll return a new AST node called `NumberLiteral` and setting its
       // value to the value of our token.
+      // 然后返回一个叫数字型的抽象语法树代码并将它的值设置为当前标记的值。
       return {
         type: 'NumberLiteral',
         value: token.value,
@@ -675,6 +682,7 @@ function parser(tokens) {
 
     // If we have a string we will do the same as number and create a
     // `StringLiteral` node.
+    // 当类型为字符串类型时，做与number同样的事。
     if (token.type === 'string') {
       current++;
 
@@ -686,6 +694,7 @@ function parser(tokens) {
 
     // Next we're going to look for CallExpressions. We start this off when we
     // encounter an open parenthesis.
+    // 往下我们将判断调用表达式，从判断是否接收到左括号开始。
     if (
       token.type === 'paren' &&
       token.value === '('
@@ -693,11 +702,14 @@ function parser(tokens) {
 
       // We'll increment `current` to skip the parenthesis since we don't care
       // about it in our AST.
+      // 移动current，然后跳过这个括号因为在抽象语法树中用不到它。
       token = tokens[++current];
 
       // We create a base node with the type `CallExpression`, and we're going
       // to set the name as the current token's value since the next token after
       // the open parenthesis is the name of the function.
+      // 创建一个调用表达式类型的空节点，然后我们设置该节点的名字为当前标记的值，
+      // 因为在左括号的下一个标记值就是函数的名字。
       let node = {
         type: 'CallExpression',
         name: token.value,
@@ -705,24 +717,30 @@ function parser(tokens) {
       };
 
       // We increment `current` *again* to skip the name token.
+      // 同样的移动current，跳过名字标记。
       token = tokens[++current];
 
       // And now we want to loop through each token that will be the `params` of
       // our `CallExpression` until we encounter a closing parenthesis.
+      // 在遇到右括号之前，我们将使用一个循环遍历每一个标记，这些标记是调用表达式的参数。
       //
       // Now this is where recursion comes in. Instead of trying to parse a
       // potentially infinitely nested set of nodes we're going to rely on
       // recursion to resolve things.
+      // 这就是递归的作用了。我们将依赖递归来实现遍历所有的标记，而不是去解析可能存在的无限个节点。
       //
       // To explain this, let's take our Lisp code. You can see that the
       // parameters of the `add` are a number and a nested `CallExpression` that
       // includes its own numbers.
-      //
+      // 下面我们将从lisp节点出发来解释。可以看到add方法的参数是一个数字还有一个调用表达式
+      // 其中也包含了他的参数。
+      // 
       //   (add 2 (subtract 4 2))
       //
       // You'll also notice that in our tokens array we have multiple closing
       // parenthesis.
-      //
+      // 可以注意到在标记数组中有多组的闭括号。
+
       //   [
       //     { type: 'paren',  value: '('        },
       //     { type: 'name',   value: 'add'      },
@@ -737,35 +755,42 @@ function parser(tokens) {
       //
       // We're going to rely on the nested `walk` function to increment our
       // `current` variable past any nested `CallExpression`.
-
+      // 现在我们将依赖嵌套的walk函数来移动current标记来通过所有的嵌套的调用表达式。
+      //
       // So we create a `while` loop that will continue until it encounters a
       // token with a `type` of `'paren'` and a `value` of a closing
       // parenthesis.
+      // 所以我们创建一个while循环直到碰到类型为paren且值为右括号的标记。
       while (
         (token.type !== 'paren') ||
         (token.type === 'paren' && token.value !== ')')
       ) {
         // we'll call the `walk` function which will return a `node` and we'll
         // push it into our `node.params`.
+        // 调用walk函数，然后将返回的节点被node所接受。
         node.params.push(walk());
         token = tokens[current];
       }
 
       // Finally we will increment `current` one last time to skip the closing
       // parenthesis.
+      // 最后移动current以跳过最后的右括号。
       current++;
 
       // And return the node.
+      // 然后返回节点，
       return node;
     }
 
     // Again, if we haven't recognized the token type by now we're going to
     // throw an error.
+    // 如果没有成功识别该标记的类型，抛出异常。
     throw new TypeError(token.type);
   }
 
   // Now, we're going to create our AST which will have a root which is a
   // `Program` node.
+  // 创建以program节点为跟的抽象语法树。
   let ast = {
     type: 'Program',
     body: [],
@@ -773,10 +798,11 @@ function parser(tokens) {
 
   // And we're going to kickstart our `walk` function, pushing nodes to our
   // `ast.body` array.
+  // 然后使用walk函数，使用ast.body数组接收函数返回的节点，
   //
   // The reason we are doing this inside a loop is because our program can have
   // `CallExpression` after one another instead of being nested.
-  //
+  // 使用循环的原因是因为程序中调用表达式会出现在另一个表达式之后，而不是嵌套的。
   //   (add 2 2)
   //   (subtract 4 2)
   //
@@ -785,6 +811,7 @@ function parser(tokens) {
   }
 
   // At the end of our parser we'll return the AST.
+  // 最后返回抽象语法树。
   return ast;
 }
 
@@ -799,7 +826,9 @@ function parser(tokens) {
  * So now we have our AST, and we want to be able to visit different nodes with
  * a visitor. We need to be able to call the methods on the visitor whenever we
  * encounter a node with a matching type.
- *
+ * 现在我们有了抽象语法树，我们想要使用visitor来访问它的不同节点。当碰到匹配的类型的节点时，
+ * 我们需要调用visitor上面的方法。
+ * 
  *   traverse(ast, {
  *     Program: {
  *       enter(node, parent) {
@@ -832,10 +861,12 @@ function parser(tokens) {
 
 // So we define a traverser function which accepts an AST and a
 // visitor. Inside we're going to define two functions...
+// 定义一个接收抽象语法树和visitor的函数，在这个函数里面将定义两个函数。
 function traverser(ast, visitor) {
 
   // A `traverseArray` function that will allow us to iterate over an array and
   // call the next function that we will define: `traverseNode`.
+  // traverseArray函数将遍历一个数组，然后调用下面顶一个traverseNode函数。
   function traverseArray(array, parent) {
     array.forEach(child => {
       traverseNode(child, parent);
@@ -844,50 +875,61 @@ function traverser(ast, visitor) {
 
   // `traverseNode` will accept a `node` and its `parent` node. So that it can
   // pass both to our visitor methods.
+  // traverseNode会接收一个节点以及它的父节点，所以它可以将另个参数都传给visitor节点。
   function traverseNode(node, parent) {
 
     // We start by testing for the existence of a method on the visitor with a
     // matching `type`.
+    // 从判断visitor上是否有匹配类型的方法开始。
     let methods = visitor[node.type];
 
     // If there is an `enter` method for this node type we'll call it with the
     // `node` and its `parent`.
+    // 如果存在enter方法，传入node和parent节点来调用它。
     if (methods && methods.enter) {
       methods.enter(node, parent);
     }
 
     // Next we are going to split things up by the current node type.
+    // 然后将当前节点的类型分为以下几种。
     switch (node.type) {
 
       // We'll start with our top level `Program`. Since Program nodes have a
       // property named body that has an array of nodes, we will call
       // `traverseArray` to traverse down into them.
+      // 从最高层级的Program开始。因为Program节点有一组的节点属性叫做body，
+      // 所以我们调用traverseArray来遍历这组节点。
       //
       // (Remember that `traverseArray` will in turn call `traverseNode` so  we
       // are causing the tree to be traversed recursively)
+      // 因为traverseArray中所有节点会按顺序地调用traverseNode，所以会导致递归地遍历树。
       case 'Program':
         traverseArray(node.body, node);
         break;
 
       // Next we do the same with `CallExpression` and traverse their `params`.
+      // 然后对于调用表达式也做同样的事，不过是遍历他的参数。
       case 'CallExpression':
         traverseArray(node.params, node);
         break;
 
       // In the cases of `NumberLiteral` and `StringLiteral` we don't have any
       // child nodes to visit, so we'll just break.
+      // 对于数字和字符串没有子节点需要访问，所以直接跳过。
       case 'NumberLiteral':
       case 'StringLiteral':
         break;
 
       // And again, if we haven't recognized the node type then we'll throw an
       // error.
+      // 同样的没有识别到节点的类型，抛出错误。
       default:
         throw new TypeError(node.type);
     }
 
     // If there is an `exit` method for this node type we'll call it with the
     // `node` and its `parent`.
+    // 如果当前节点有exit方法，传入node和parent调用它，
     if (methods && methods.exit) {
       methods.exit(node, parent);
     }
@@ -895,6 +937,8 @@ function traverser(ast, visitor) {
 
   // Finally we kickstart the traverser by calling `traverseNode` with our ast
   // with no `parent` because the top level of the AST doesn't have a parent.
+  // 完成上述两个函数后，调用traverseNode函数，传入最高层级的抽象语法树根节点，父节点设置为null
+  // 因为最高层级的没有父节点。
   traverseNode(ast, null);
 }
 
@@ -909,7 +953,9 @@ function traverser(ast, visitor) {
  * Next up, the transformer. Our transformer is going to take the AST that we
  * have built and pass it to our traverser function with a visitor and will
  * create a new ast.
- *
+ * 下一步，转换器。传入我们刚创建的抽象语法树和visitor给traverser函数，转换器会创建
+ * 全新的抽象语法树。
+ * 
  * ----------------------------------------------------------------------------
  *   Original AST                     |   Transformed AST
  * ----------------------------------------------------------------------------
@@ -946,11 +992,13 @@ function traverser(ast, visitor) {
  * ----------------------------------------------------------------------------
  */
 
-// So we have our transformer function which will accept the lisp ast.
+// So we have our transformer function which will accept the lisp ast
+// 创建一个接收lisp抽象语法树的转换器函数。
 function transformer(ast) {
 
   // We'll create a `newAst` which like our previous AST will have a program
   // node.
+  // 创建一个newAst像之前的抽象语法树一样拥有program节点。
   let newAst = {
     type: 'Program',
     body: [],
@@ -960,20 +1008,27 @@ function transformer(ast) {
   // use a property named `context` on our parent nodes that we're going to push
   // nodes to their parent's `context`. Normally you would have a better
   // abstraction than this, but for our purposes this keeps things simple.
-  //
+  // 我们将在父节点上使用一个context的属性，然后将节点push到其父节点的context中。
+  // 正常来说会有比这个更好地抽象方式，但是这对于我们的目的来说，这回使保留节点变得简单
+
   // Just take note that the context is a reference *from* the old ast *to* the
   // new ast.
+  // 只需要记住父节点的content是新抽象语法树对旧抽象语法树的一个引用
   ast._context = newAst.body;
 
   // We'll start by calling the traverser function with our ast and a visitor.
+  // 从传入抽象语法树和visitor以调用traverser函数开始
   traverser(ast, {
 
     // The first visitor method accepts any `NumberLiteral`
+    // 第一个visitor方法接收所有的数字
     NumberLiteral: {
       // We'll visit them on enter.
+      // 在enter中访问它们。
       enter(node, parent) {
         // We'll create a new node also named `NumberLiteral` that we will push to
         // the parent context.
+        // 创建一个类型为NumberLiteral的节点，然后push到其parent的context当中。
         parent._context.push({
           type: 'NumberLiteral',
           value: node.value,
@@ -982,6 +1037,7 @@ function transformer(ast) {
     },
 
     // Next we have `StringLiteral`
+    // 然后是StringLiteral
     StringLiteral: {
       enter(node, parent) {
         parent._context.push({
@@ -992,11 +1048,13 @@ function transformer(ast) {
     },
 
     // Next up, `CallExpression`.
+    // 接着是调用表达式
     CallExpression: {
       enter(node, parent) {
 
         // We start creating a new node `CallExpression` with a nested
         // `Identifier`.
+        // 创建一个CallExpression类型的节点，其中包含有嵌套的Identifier
         let expression = {
           type: 'CallExpression',
           callee: {
@@ -1009,15 +1067,20 @@ function transformer(ast) {
         // Next we're going to define a new context on the original
         // `CallExpression` node that will reference the `expression`'s arguments
         // so that we can push arguments.
+        // 然后在原始的CallExpression节点上创建一个content变量，是对expression中arguments
+        // 的一个引用，所以在context当中我们也可以push变量。
         node._context = expression.arguments;
 
         // Then we're going to check if the parent node is a `CallExpression`.
         // If it is not...
+        // 然后判断这个节点的父节点是不是CallExpression类型，如果不是
         if (parent.type !== 'CallExpression') {
 
           // We're going to wrap our `CallExpression` node with an
           // `ExpressionStatement`. We do this because the top level
           // `CallExpression` in JavaScript are actually statements.
+          // 然后我们将使用ExpressionStatement来包装CallExpression节点
+          // 因为在顶层的CallExpression在JS的实际是也是语句。
           expression = {
             type: 'ExpressionStatement',
             expression: expression,
@@ -1026,6 +1089,7 @@ function transformer(ast) {
 
         // Last, we push our (possibly wrapped) `CallExpression` to the `parent`'s
         // `context`.
+        // 最后将CallExpression或者 包装的CallExpression推入父节点的context中。
         parent._context.push(expression);
       },
     }
@@ -1033,6 +1097,7 @@ function transformer(ast) {
 
   // At the end of our transformer function we'll return the new ast that we
   // just created.
+  // 在转换器的最后，返回刚创建的新语法树。
   return newAst;
 }
 
@@ -1045,9 +1110,10 @@ function transformer(ast) {
 
 /**
  * Now let's move onto our last phase: The Code Generator.
- *
+ * 下面到编译器的最后一步：代码生成。
  * Our code generator is going to recursively call itself to print each node in
  * the tree into one giant string.
+ * 代码生成将递归的调用自身，然后输出树中每一个节点为一长串的字符串。
  */
 
 function codeGenerator(node) {
@@ -1057,12 +1123,15 @@ function codeGenerator(node) {
 
     // If we have a `Program` node. We will map through each node in the `body`
     // and run them through the code generator and join them with a newline.
+    // 如果当前是Program节点。将遍历他的body的每一个节点来生成代码，最后每个节点之间
+    // 的输出加入换行符。
     case 'Program':
       return node.body.map(codeGenerator)
         .join('\n');
 
     // For `ExpressionStatement` we'll call the code generator on the nested
     // expression and we'll add a semicolon...
+    // 对于Expression节点来说，我们将对嵌套的expression调用代码生成，然后每次加入分号
     case 'ExpressionStatement':
       return (
         codeGenerator(node.expression) +
@@ -1073,6 +1142,8 @@ function codeGenerator(node) {
     // parenthesis, we'll map through each node in the `arguments` array and run
     // them through the code generator, joining them with a comma, and then
     // we'll add a closing parenthesis.
+    // 对于CallExpression来说，我们会输出callee，加入左括号，然后遍历节点的参数，
+    // 对所有的参数调用代码生成，中间用逗号隔开，最后加入右括号。
     case 'CallExpression':
       return (
         codeGenerator(node.callee) +
@@ -1083,18 +1154,22 @@ function codeGenerator(node) {
       );
 
     // For `Identifier` we'll just return the `node`'s name.
+    // 对于Identifier来说，只需要返回该节点的名字
     case 'Identifier':
       return node.name;
 
     // For `NumberLiteral` we'll just return the `node`'s value.
+    // 对于NumberLiteral来说，只需要返回节点的名字。
     case 'NumberLiteral':
       return node.value;
 
     // For `StringLiteral` we'll add quotations around the `node`'s value.
+    // 对于StringLiteral，需要在节点值的两边加入双引号。
     case 'StringLiteral':
       return '"' + node.value + '"';
 
     // And if we haven't recognized the node, we'll throw an error.
+    // 如果没有识别该节点，抛出异常。
     default:
       throw new TypeError(node.type);
   }
